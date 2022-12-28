@@ -1,0 +1,33 @@
+name: 'Security Review by OpenAI Github Action'
+description: 'A GitHub Action that reviews the modified files and comments with security recommendations'
+inputs:
+  openai-token:  
+    description: 'OpenAI Token'
+    required: true
+  tokens:  
+    description: 'Maximum number of tokens to use per file'
+    required: false
+    default: 2500
+  max-files:  
+    description: 'Maximum number of files to analyze'
+    required: false
+    default: 5
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Dependencies
+      run: pip install -r $GITHUB_ACTION_PATH/requirements.txt
+      shell: bash
+    - name: Add environmnet variables
+      run: |
+          echo "MAX_FILES=${{ inputs.max-files }}" >> $GITHUB_ENV
+          echo "TOKENS=${{ inputs.tokens }}" >> $GITHUB_ENV
+          echo "OPENAI_API_KEY=${{ inputs.openai-token }}" >> $GITHUB_ENV
+      shell: bash
+    - name: Get OpenAI recommendation
+      run: python $GITHUB_ACTION_PATH/src/gitsecurityai.py
+      shell: bash
+    - name: Comment PR
+      uses: thollander/actions-comment-pull-request@4159e62bc85fec21089efb305e83a9e7113074e8
+      with:
+        filePath: comment.md
