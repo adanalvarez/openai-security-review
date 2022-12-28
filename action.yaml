@@ -1,5 +1,8 @@
 name: 'Security Review by OpenAI Github Action'
 description: 'A GitHub Action that reviews the modified files and comments with security recommendations'
+branding:
+  icon: 'git-pull-request'
+  color: 'blue'
 inputs:
   openai-token:  
     description: 'OpenAI Token'
