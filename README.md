@@ -1,6 +1,8 @@
 > **Warning**
 > This GitHub action it is not recommended for production environments. It's only a PoC to test OpenAI.
 
+> **Warning**
+> This GitHub action sends the code to OpenAI.
 # openai-security-review
 
 GitHub action to get security recommendations from OpenAI.
