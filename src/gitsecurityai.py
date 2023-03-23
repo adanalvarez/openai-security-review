@@ -6,19 +6,17 @@ import json
 def check_code_vulnerabilities(code, tokens):
     prompt = f"Tell me if there is a security vulnerability in the following code: '{code}' if there is a vulnerability in what line or lines and what you recommend to solve the problem with an example. Also, make the answer in Markdown format as if it was a GitHub comment"
     try:
-        result = openai.Completion.create(
-                    engine="text-davinci-003",
-                    max_tokens=int(tokens),
-                    top_p=1,
-                    frequency_penalty=1,
-                    presence_penalty=1,
-                    prompt=prompt,
-                    temperature=0.2
-                    )
-        if result["choices"][0]["text"].startswith("\n\nNo"):
+        result = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a cybersecurity specialist."},
+                        {"role": "user", "content": prompt}
+                    ]
+        )
+        if result["choices"][0]["message"]["content"].startswith("\n\nNo"):
             return "No vulnerabilities detected"
         else:
-            return result["choices"][0]["text"]
+            return result["choices"][0]["message"]["content"]
     except Exception as e:
         return f"An error occurred: {e}"
     
