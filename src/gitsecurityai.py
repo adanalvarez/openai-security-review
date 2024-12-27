@@ -3,71 +3,111 @@ import openai
 import os
 import json
 
+
 def check_code_vulnerabilities(code, tokens):
-    prompt = f"Tell me if there is a security vulnerability in the following code: '{code}' if there is a vulnerability in what line or lines and what you recommend to solve the problem with an example. Also, make the answer in Markdown format as if it was a GitHub comment"
+    """
+    Analyzes the provided code for vulnerabilities using OpenAI's API.
+
+    Args:
+        code (str): The code to analyze.
+        tokens (str): The maximum number of tokens to use in the API request.
+
+    Returns:
+        str: The result of the vulnerability analysis in Markdown format.
+    """
+    prompt = (
+        f"**Prompt:**\n\n"
+        f"Analyze the following code for security vulnerabilities:\n\n"
+        f"```python\n{code}\n```\n\n"
+        f"If vulnerabilities exist:\n"
+        f"1. Identify the specific line(s) containing the issue.\n"
+        f"2. Provide a detailed explanation of the vulnerability.\n"
+        f"3. Recommend a solution to resolve the issue, including an example of improved code.\n\n"
+        f"Return the response in **Markdown format**, formatted as a GitHub comment."
+    )
     try:
         result = openai.Completion.create(
-                    engine="text-davinci-003",
-                    max_tokens=int(tokens),
-                    top_p=1,
-                    frequency_penalty=1,
-                    presence_penalty=1,
-                    prompt=prompt,
-                    temperature=0.2
-                    )
+            engine="gpt-4o",
+            max_tokens=int(tokens),
+            top_p=1,
+            frequency_penalty=1,
+            presence_penalty=1,
+            prompt=prompt,
+            temperature=0.2,
+        )
         if result["choices"][0]["text"].startswith("\n\nNo"):
             return "No vulnerabilities detected"
         else:
             return result["choices"][0]["text"]
     except Exception as e:
         return f"An error occurred: {e}"
-    
+
+
 def get_modified_files():
+    """
+    Identifies modified files in the current Git repository based on a pull request event.
+
+    Returns:
+        list: A list of modified file paths.
+
+    Raises:
+        ValueError: If the current directory is not a Git repository.
+    """
     try:
         with open(os.environ['GITHUB_EVENT_PATH']) as f:
             event = json.load(f)
         # Open the repository using the `git` library
         repo = git.Repo('.')
 
-        # Get the base and head commit shas from the pull request event
+        # Get the base and head commit SHAs from the pull request event
         base_sha = event['pull_request']['base']['sha']
         head_sha = event['pull_request']['head']['sha']
         
-        source_commit = repo.commit( base_sha )
-        target_commit = repo.commit( head_sha )
-              
+        source_commit = repo.commit(base_sha)
+        target_commit = repo.commit(head_sha)
+
         # Use the `git.Diff` class to get a list of modified files
-        diff = source_commit.diff( target_commit )
+        diff = source_commit.diff(target_commit)
 
         modified_files = []
         for d in diff:
             if d.change_type in ('A', 'M', 'T'):
                 modified_files.append(d.a_path)
-        return modified_files       
+        return modified_files
     except git.exc.InvalidGitRepositoryError as e:
         raise ValueError("The current directory is not a Git repository.") from e
 
-def run():  # sourcery skip: avoid-builtin-shadow
-    max = os.environ.get("MAX_FILES")
+
+def run():
+    """
+    Main function to analyze modified files for vulnerabilities and generate a comment.
+    """
+    max_files = os.environ.get("MAX_FILES")
     tokens = os.environ.get("TOKENS")
 
     comment = "## Suggestions from the AI"
 
-    files = get_modified_files()
-    print(files)
-    if len(files) > int(max):
-        comment = f"{len(files)} files were modified. Limit {max}."
-    else:
-        for file in files:
-            try:
-                with open(file, 'r') as f:
-                    code = f.read()
-                iasuggestion = check_code_vulnerabilities(code, tokens)
-            except Exception as e:
-                print(f"An error occurred: {e}")
-            comment = f"{comment}\n### {file}\n{iasuggestion}\n"
+    try:
+        files = get_modified_files()
+        print(files)
+        if len(files) > int(max_files):
+            comment = f"{len(files)} files were modified. Limit {max_files} exceeded."
+        else:
+            for file in files:
+                try:
+                    with open(file, 'r') as f:
+                        code = f.read()
+                    iasuggestion = check_code_vulnerabilities(code, tokens)
+                except Exception as e:
+                    iasuggestion = f"An error occurred while analyzing {file}: {e}"
+                comment = f"{comment}\n\n### {file}\n{iasuggestion}\n"
+    except Exception as e:
+        comment += f"\n\nAn error occurred during execution: {e}"
+
+    # Write the comment to a file
     with open("comment.md", "w") as f:
         f.write(comment)
+
 
 if __name__ == "__main__":
     run()
