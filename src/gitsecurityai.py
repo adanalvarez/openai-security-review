@@ -102,13 +102,15 @@ def run():
                         code = f.read()
                     iasuggestion = check_code_vulnerabilities(code, tokens)
 
-                    # Escape inner backticks in the suggestion to prevent Markdown parsing issues
+                    # Escape backticks for proper Markdown rendering
                     iasuggestion = iasuggestion.replace("```", "````")
 
                 except Exception as e:
                     iasuggestion = f"An error occurred while analyzing `{file}`: `{e}`"
 
-                comment += f"\n### File: `{file}`\n{iasuggestion}\n\n---\n"
+                # Append the file analysis to the comment with proper Markdown formatting
+                comment += f"\n### File: `{file}`\n"
+                comment += f"```markdown\n{iasuggestion}\n```\n\n---\n"
 
     except Exception as e:
         comment += f"\n**Error:** An error occurred during execution: `{e}`\n"
@@ -116,7 +118,6 @@ def run():
     # Write the comment to a file
     with open("comment.md", "w") as f:
         f.write(comment)
-
 
 
 if __name__ == "__main__":
