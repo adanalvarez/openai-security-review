@@ -15,6 +15,7 @@ def check_code_vulnerabilities(code, tokens):
     Returns:
         str: The result of the vulnerability analysis in Markdown format.
     """
+    client = openai.ChatCompletion() 
     prompt = (
         f"**Prompt:**\n\n"
         f"Analyze the following code for security vulnerabilities:\n\n"
@@ -26,19 +27,25 @@ def check_code_vulnerabilities(code, tokens):
         f"Return the response in **Markdown format**, formatted as a GitHub comment."
     )
     try:
-        result = openai.Completion.create(
-            engine="gpt-4o",
+        response = client.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
             max_tokens=int(tokens),
+            temperature=0.2,
             top_p=1,
             frequency_penalty=1,
             presence_penalty=1,
-            prompt=prompt,
-            temperature=0.2,
         )
-        if result["choices"][0]["text"].startswith("\n\nNo"):
+        result_text = response["choices"][0]["message"]["content"]
+        if result_text.strip().startswith("No"):
             return "No vulnerabilities detected"
         else:
-            return result["choices"][0]["text"]
+            return result_text
     except Exception as e:
         return f"An error occurred: {e}"
 
