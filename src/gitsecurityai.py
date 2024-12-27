@@ -101,11 +101,14 @@ def run():
                     with open(file, 'r') as f:
                         code = f.read()
                     iasuggestion = check_code_vulnerabilities(code, tokens)
+
+                    # Escape inner backticks in the suggestion to prevent Markdown parsing issues
+                    iasuggestion = iasuggestion.replace("```", "````")
+
                 except Exception as e:
                     iasuggestion = f"An error occurred while analyzing `{file}`: `{e}`"
-                
-                comment += f"\n### File: `{file}`\n"
-                comment += f"{iasuggestion}\n\n---\n"
+
+                comment += f"\n### File: `{file}`\n{iasuggestion}\n\n---\n"
 
     except Exception as e:
         comment += f"\n**Error:** An error occurred during execution: `{e}`\n"
