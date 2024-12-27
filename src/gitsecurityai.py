@@ -1,5 +1,5 @@
 import git
-import openai
+from openai import OpenAI
 import os
 import json
 
@@ -15,7 +15,7 @@ def check_code_vulnerabilities(code, tokens):
     Returns:
         str: The result of the vulnerability analysis in Markdown format.
     """
-    client = openai.ChatCompletion() 
+    client = OpenAI()
     prompt = (
         f"**Prompt:**\n\n"
         f"Analyze the following code for security vulnerabilities:\n\n"
@@ -27,21 +27,17 @@ def check_code_vulnerabilities(code, tokens):
         f"Return the response in **Markdown format**, formatted as a GitHub comment."
     )
     try:
-        response = client.create(
-            model="gpt-4",
+        response = client.chat.completions.create(
+            model="gpt-4o",
             messages=[
                 {
                     "role": "user",
                     "content": prompt,
                 }
             ],
-            max_tokens=int(tokens),
-            temperature=0.2,
-            top_p=1,
-            frequency_penalty=1,
-            presence_penalty=1,
+            max_tokens=int(tokens)
         )
-        result_text = response["choices"][0]["message"]["content"]
+        result_text = response.choices[0].message.content
         if result_text.strip().startswith("No"):
             return "No vulnerabilities detected"
         else:
