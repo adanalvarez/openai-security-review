@@ -88,13 +88,13 @@ def run():
     max_files = os.environ.get("MAX_FILES")
     tokens = os.environ.get("TOKENS")
 
-    comment = "## Suggestions from the AI"
+    comment = "## Suggestions from the AI\n"
 
     try:
         files = get_modified_files()
         print(files)
         if len(files) > int(max_files):
-            comment = f"{len(files)} files were modified. Limit {max_files} exceeded."
+            comment += f"\n**Note:** {len(files)} files were modified, which exceeds the limit of {max_files} files. Please reduce the number of modified files for analysis.\n"
         else:
             for file in files:
                 try:
@@ -102,14 +102,18 @@ def run():
                         code = f.read()
                     iasuggestion = check_code_vulnerabilities(code, tokens)
                 except Exception as e:
-                    iasuggestion = f"An error occurred while analyzing {file}: {e}"
-                comment = f"{comment}\n\n### {file}\n{iasuggestion}\n"
+                    iasuggestion = f"An error occurred while analyzing `{file}`: `{e}`"
+                
+                comment += f"\n### File: `{file}`\n"
+                comment += f"{iasuggestion}\n\n---\n"
+
     except Exception as e:
-        comment += f"\n\nAn error occurred during execution: {e}"
+        comment += f"\n**Error:** An error occurred during execution: `{e}`\n"
 
     # Write the comment to a file
     with open("comment.md", "w") as f:
         f.write(comment)
+
 
 
 if __name__ == "__main__":
